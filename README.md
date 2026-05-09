@@ -142,6 +142,14 @@ bun packages/edgeclaw/install/install.ts <YOUR_API_KEY>
 API_KEY=<YOUR_API_KEY> bun packages/edgeclaw/install/install.ts
 ```
 
+To target the dev environment (keys generated on `dev.index.network`), pass `--dev`:
+
+```bash
+bun packages/edgeclaw/install/install.ts <YOUR_DEV_API_KEY> --dev
+```
+
+Or override the MCP URL explicitly via `INDEX_MCP_URL=…`. Without either, the installer points at `https://protocol.index.network/mcp` (production).
+
 The installer:
 
 1. Writes `mcp.servers.index` in `~/.openclaw/openclaw.json`, pointed at `https://protocol.index.network/mcp` with your API key in `x-api-key`.

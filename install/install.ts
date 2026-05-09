@@ -47,19 +47,26 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 
-const PROTOCOL_MCP_URL = "https://protocol.index.network/mcp";
+const PROD_MCP_URL = "https://protocol.index.network/mcp";
+const DEV_MCP_URL = "https://protocol.dev.index.network/mcp";
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SOURCE_WORKSPACE = join(SCRIPT_DIR, "../workspace");
 const TARGET_WORKSPACE = join(homedir(), ".openclaw", "workspace");
 
+const FLAGS = process.argv.slice(2).filter((a) => a.startsWith("--"));
+const POSITIONALS = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const IS_DEV = FLAGS.includes("--dev");
+const PROTOCOL_MCP_URL =
+  process.env.INDEX_MCP_URL?.trim() || (IS_DEV ? DEV_MCP_URL : PROD_MCP_URL);
+
 function readApiKey(): string {
-  const fromArg = process.argv[2]?.trim();
+  const fromArg = POSITIONALS[0]?.trim();
   const fromEnv = process.env.API_KEY?.trim() ?? process.env.INDEX_API_KEY?.trim();
   const key = fromArg || fromEnv;
   if (!key) {
     console.error("error: API_KEY required");
-    console.error("usage: bun install.ts <API_KEY>");
-    console.error("       API_KEY=<key> bun install.ts");
+    console.error("usage: bun install.ts <API_KEY> [--dev]");
+    console.error("       API_KEY=<key> bun install.ts [--dev]");
     process.exit(1);
   }
   return key;
@@ -278,6 +285,7 @@ function main(): void {
 
   console.log("EdgeClaw installer");
   console.log("==================");
+  console.log(`target: ${IS_DEV ? "dev" : "production"} (${PROTOCOL_MCP_URL})`);
   console.log("");
 
   patchOpenclawConfig(apiKey);
