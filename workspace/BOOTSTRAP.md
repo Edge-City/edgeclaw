@@ -76,7 +76,7 @@ Run the welcome pass — follow `prompts/welcome.md`. It handles the message com
 ## Rules
 
 - Do not skip steps or reorder them.
-- Do not call `create_opportunities`, `list_opportunities`, or any other discovery tool **before Step 6**. Onboarding ends at `complete_onboarding()`; the welcome ambient pass is the first time discovery is allowed.
+- Do not call `discover_opportunities`, `list_opportunities`, or any other discovery tool **before Step 6**. Onboarding ends at `complete_onboarding()`; the welcome ambient pass is the first time discovery is allowed.
 - Do not mention Gmail or email import — they are not available in this flow.
 - Call `create_intent` at most once per user response.
 - If the user tries to do something else mid-onboarding, gently redirect: "Let's finish setting you up first, then we can dive into that."
