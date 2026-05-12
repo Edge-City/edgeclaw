@@ -2,11 +2,11 @@
 
 The Agent Village experience for **Edge Esmeralda 2026** (May 30 – Jun 27, Healdsburg, CA).
 
-EdgeClaw is the public skills package and onboarding scripts that any agent (OpenClaw via InstaClaw, Hermes, Claude Code, custom) loads to participate in the Edge Esmeralda Agent Village. It defines what an EdgeClaw agent knows, how it authenticates with the village stack, and how it interacts with attendees.
+EdgeClaw is the public skills package and onboarding scripts that an OpenClaw agent (whether running via InstaClaw or self-hosted) loads to participate in the Edge Esmeralda Agent Village. It's a multi-backend package: ambient discovery and intent negotiation through Index Network, knowledge graph through Geo, calendar and directory through EdgeOS. EdgeClaw defines what an agent knows, how it authenticates with each backend, and how it interacts with attendees.
 
 ## What you get
 
-Once installed, EdgeClaw:
+Today, capabilities come from **Index Network** (ambient discovery + intent negotiation). **Geo** (knowledge graph) and **EdgeOS** (calendar + directory) are also in scope. Once installed, EdgeClaw:
 
 - **Runs onboarding** the first time you message it (greet → profile lookup → community discovery → first signal → `complete_onboarding` → silent capture of your platform handle).
 - **Sends a morning digest at 08:00 host-local time** with the connections worth your attention and the asks where you can help.
@@ -24,9 +24,9 @@ See the project hub for the full diagram and decisions.
 
 ## What's here
 
-- `skills/` — markdown files describing how the agent calls Edge APIs (calendar, directory, Geo, Index)
 - `workspace/IDENTITY.md` — what an EdgeClaw agent knows about itself and the village
 - `workspace/` — the full runtime workspace bundle (prompts, soul, heartbeat, community context)
+- `skills/` — directory for backend-specific skill bundles
 - `onboarding/` — intent-capture flow for new agents (1 to 2 questions during setup)
 - `install/` — bootstrap scripts for plugging EdgeClaw into a runtime
 
@@ -36,7 +36,7 @@ Two paths:
 
 **1. I'm new to agents.** Sign up at `edgecity.live/agentvillage` and pick "Set one up for me." InstaClaw provisions a hosted agent with EdgeClaw preinstalled. ~5 minutes.
 
-**2. I know what I'm doing.** Get your EdgeOS API token from the EdgeOS portal, clone this repo, and plug the skills into your existing agent (Hermes, Claude Code, custom Anthropic API setup). ~3 minutes.
+**2. I'm self-hosting OpenClaw.** Set up a clean OpenClaw installation, then run the EdgeClaw installer from a clone of this repo.
 
 ## Integration API
 
@@ -50,7 +50,7 @@ All requests use the experiment network's **master key** as a bearer token:
 x-api-key: <masterKey>
 ```
 
-The master key is issued once when the experiment network is created in the Index Network dashboard and is never re-shown.
+The master key is issued once when the experiment network is created in the Index Network dashboard and is never re-shown. It is **server-side only** — never expose it in the EdgeOS portal frontend, user-visible config, the public repo, or attendee-facing copy-paste.
 
 ### POST /api/networks/:id/signup
 
@@ -103,7 +103,7 @@ x-api-key: <masterKey>
 
 HTTP `201` if the user was newly created; `200` if they already existed.
 
-`mcpServer` is the JSON object to write into the runtime's MCP servers config (standard across Claude Code, OpenClaw, Hermes, and most other MCP-compatible runtimes).
+`mcpServer` is the standard MCP server config object that OpenClaw reads on startup.
 
 **Idempotency**
 
@@ -119,12 +119,12 @@ Every call with the same email returns the same user but a **fresh API key** —
 
 ### What InstaClaw does after signup
 
-1. Runs the EdgeClaw installer with the returned `apiKey`: `bun packages/edgeclaw/install/install.ts <apiKey>` (or equivalent in the hosted runtime).
+1. Runs the EdgeClaw installer with the returned `apiKey`: `bun install/install.ts <apiKey>` (or equivalent in the hosted runtime).
 2. In a follow-up step, captures the attendee's Telegram handle and binds it to their agent transport — this is entirely InstaClaw-owned and happens outside this endpoint.
 
 ### What EdgeOS does after signup
 
-Displays the returned `mcpServer` object to the attendee as a copyable config snippet. The attendee pastes it into their agent's MCP servers config (or runs `bun packages/edgeclaw/install/install.ts <apiKey>` from a clone of this repo).
+Displays the returned `mcpServer` object to the attendee as a copyable config snippet. The attendee pastes it into their agent's MCP servers config (or runs `bun install/install.ts <apiKey>` from a clone of this repo).
 
 ## Prerequisites
 
@@ -137,15 +137,15 @@ Displays the returned `mcpServer` object to the attendee as a copyable config sn
 From a clone of this repo:
 
 ```bash
-bun packages/edgeclaw/install/install.ts <YOUR_API_KEY>
+bun install/install.ts <YOUR_API_KEY>
 # or
-API_KEY=<YOUR_API_KEY> bun packages/edgeclaw/install/install.ts
+API_KEY=<YOUR_API_KEY> bun install/install.ts
 ```
 
 To target the dev environment (keys generated on `dev.index.network`), pass `--dev`:
 
 ```bash
-bun packages/edgeclaw/install/install.ts <YOUR_DEV_API_KEY> --dev
+bun install/install.ts <YOUR_DEV_API_KEY> --dev
 ```
 
 Or override the MCP URL explicitly via `INDEX_MCP_URL=…`. Without either, the installer points at `https://protocol.index.network/mcp` (production).
@@ -169,19 +169,19 @@ Send any message in your chat to bring EdgeClaw online:
 To tear down EdgeClaw and start fresh (leaves Telegram token, OpenRouter key, and gateway config untouched):
 
 ```bash
-bun packages/edgeclaw/install/reset.ts
+bun install/reset.ts
 ```
 
 Then re-install:
 
 ```bash
-bun packages/edgeclaw/install/install.ts <YOUR_API_KEY>
+bun install/install.ts <YOUR_API_KEY>
 ```
 
 Pass `--wipe-user` to also remove `USER.md` and the `memory/` directory:
 
 ```bash
-bun packages/edgeclaw/install/reset.ts --wipe-user
+bun install/reset.ts --wipe-user
 ```
 
 ## How it runs
@@ -221,4 +221,4 @@ Maintained by the Edge City and YoursTruly teams. Direct push access is limited 
 
 ## License
 
-MIT. See [LICENSE](../../LICENSE) at the repo root.
+MIT. See [LICENSE](LICENSE).
