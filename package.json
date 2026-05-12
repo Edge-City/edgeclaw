@@ -8,10 +8,11 @@
     "edgeclaw": "./install/install.ts"
   },
   "files": [
-    "install/install.ts",
-    "install/reset.ts",
+    "install/*.ts",
     "workspace/**/*.md",
-    "README.md"
+    "skills/",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "bun": ">=1.0.0"

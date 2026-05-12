@@ -1,33 +1,28 @@
 #!/usr/bin/env bun
 /**
- * EdgeClaw installer.
+ * EdgeClaw installer (orchestrator).
  *
- * Pre-stages OpenClaw config and the EdgeClaw workspace so the agent comes
- * online with a single chat turn. The installer owns everything that does not
- * belong in a runtime prompt:
+ * Pre-stages the EdgeClaw workspace and runs each backend installer. Today
+ * only Index Network is wired up; EdgeOS and Geo are placeholders that
+ * future contributors fill in.
  *
- *   - Writes `mcp.servers.index` to the canonical production protocol URL
- *     with the user's API key.
- *   - Disables Telegram progress-draft "tidepooling" so the streaming-off
+ * EdgeClaw-wide steps in this script:
+ *
+ *   - Verify `openclaw` is available on PATH.
+ *   - Disable Telegram progress-draft "tidepooling" so the streaming-off
  *     setting is loaded on the very first gateway start (not deferred until
  *     the first bootstrap turn drains).
- *   - Copies the workspace markdown bundle (BOOTSTRAP, AGENTS, SOUL, USER,
+ *   - Copy the workspace markdown bundle (BOOTSTRAP, AGENTS, SOUL, USER,
  *     IDENTITY, TOOLS, HEARTBEAT, COMMUNITY, prompts/*) into
  *     `~/.openclaw/workspace/`.
- *   - Installs three cron jobs: the daily morning digest (08:00), and two
- *     ambient discovery passes (14:00 and 20:00 host-local). Each pass is
- *     selective — max 3 direct + 3 introducer opportunities per dispatch,
- *     gated on the same quality bar.
- *   - Restarts the gateway so all config changes and cron jobs take effect.
+ *   - Call each backend installer in `install_<backend>.ts`.
+ *   - Bind any `EdgeClaw — *` cron jobs to the user's Telegram chat once a
+ *     session exists, so digest / ambient deliveries route correctly.
+ *   - Restart the gateway so all config changes and cron jobs take effect.
  *
  * Anything the agent should *do at runtime* (greet the user, create their
  * profile, send the welcome message body) stays in BOOTSTRAP.md /
  * prompts/welcome.md — the installer does not impersonate the agent.
- *
- * The welcome message is delivered by `BOOTSTRAP.md` Step 6 at the end of
- * onboarding for new users. Already-onboarded users who reinstall don't get
- * an automatic welcome — the next ambient (14:00 / 20:00) or digest (08:00)
- * pass picks them up.
  *
  * Usage:
  *   bun install.ts <API_KEY>
@@ -47,30 +42,13 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 
-const PROD_MCP_URL = "https://protocol.index.network/mcp";
-const DEV_MCP_URL = "https://protocol.dev.index.network/mcp";
+import { installIndex } from "./install_index";
+import { installEdgeos } from "./install_edgeos";
+import { installGeo } from "./install_geo";
+
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SOURCE_WORKSPACE = join(SCRIPT_DIR, "../workspace");
 const TARGET_WORKSPACE = join(homedir(), ".openclaw", "workspace");
-
-const FLAGS = process.argv.slice(2).filter((a) => a.startsWith("--"));
-const POSITIONALS = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-const IS_DEV = FLAGS.includes("--dev");
-const PROTOCOL_MCP_URL =
-  process.env.INDEX_MCP_URL?.trim() || (IS_DEV ? DEV_MCP_URL : PROD_MCP_URL);
-
-function readApiKey(): string {
-  const fromArg = POSITIONALS[0]?.trim();
-  const fromEnv = process.env.API_KEY?.trim() ?? process.env.INDEX_API_KEY?.trim();
-  const key = fromArg || fromEnv;
-  if (!key) {
-    console.error("error: API_KEY required");
-    console.error("usage: bun install.ts <API_KEY> [--dev]");
-    console.error("       API_KEY=<key> bun install.ts [--dev]");
-    process.exit(1);
-  }
-  return key;
-}
 
 function ensureOpenclawAvailable(): void {
   try {
@@ -82,22 +60,43 @@ function ensureOpenclawAvailable(): void {
   }
 }
 
-function patchOpenclawConfig(apiKey: string): void {
-  const mcpEntry = JSON.stringify({
-    url: PROTOCOL_MCP_URL,
-    transport: "streamable-http",
-    headers: { "x-api-key": apiKey },
-  });
-
-  console.log("→ writing mcp.servers.index");
-  execSync(`openclaw config set mcp.servers.index '${mcpEntry}' --strict-json`, {
-    stdio: ["ignore", "ignore", "inherit"],
-  });
-
+function disableTelegramTidepooling(): void {
   console.log("→ disabling telegram progress-draft tidepooling");
   execSync("openclaw config set channels.telegram.streaming.mode off", {
     stdio: ["ignore", "ignore", "inherit"],
   });
+}
+
+function copyWorkspaceFiles(): void {
+  if (!existsSync(SOURCE_WORKSPACE)) {
+    console.error(`error: bundled workspace missing at ${SOURCE_WORKSPACE}`);
+    process.exit(1);
+  }
+
+  if (!existsSync(TARGET_WORKSPACE)) {
+    mkdirSync(TARGET_WORKSPACE, { recursive: true });
+  }
+
+  let copied = 0;
+  for (const entry of readdirSync(SOURCE_WORKSPACE)) {
+    const sourcePath = join(SOURCE_WORKSPACE, entry);
+    const targetPath = join(TARGET_WORKSPACE, entry);
+    const stat = statSync(sourcePath);
+
+    if (stat.isDirectory()) {
+      if (!existsSync(targetPath)) mkdirSync(targetPath, { recursive: true });
+      for (const inner of readdirSync(sourcePath)) {
+        if (!inner.endsWith(".md")) continue;
+        copyFileSync(join(sourcePath, inner), join(targetPath, inner));
+        copied++;
+      }
+    } else if (entry.endsWith(".md")) {
+      copyFileSync(sourcePath, targetPath);
+      copied++;
+    }
+  }
+
+  console.log(`→ staged ${copied} workspace files into ${TARGET_WORKSPACE}`);
 }
 
 /**
@@ -173,71 +172,6 @@ function bindCronsToTelegram(
   }
 }
 
-function installCronJobs(): void {
-  const npmBin = `${process.env.HOME}/.npm/bin`;
-  const localBin = `${process.env.HOME}/.local/bin`;
-  const env = { ...process.env, PATH: `${npmBin}:${localBin}:${process.env.PATH}` };
-  const workspaceDir = join(homedir(), ".openclaw", "workspace");
-
-  // Remove existing EdgeClaw cron jobs before re-adding to stay idempotent.
-  try {
-    const raw = execSync("openclaw cron list --json", { encoding: "utf8", env });
-    const parsed = JSON.parse(raw) as { jobs?: Array<{ id: string; name: string }> };
-    for (const job of parsed.jobs ?? []) {
-      if (job.name.startsWith("EdgeClaw")) {
-        execSync(`openclaw cron remove ${job.id}`, { stdio: "ignore", env });
-      }
-    }
-  } catch {
-    // Gateway may be mid-restart; proceed and let cron add handle any conflicts.
-  }
-
-  console.log("→ installing cron jobs");
-
-  // `--no-deliver` disables the runner's announce fallback. The agent must use
-  // the `message` tool to deliver visible content; anything the agent says as
-  // its final assistant text stays internal. This eliminates the entire class
-  // of NO_REPLY-token-leak bugs (textNO_REPLY, JSON envelopes, partial tokens)
-  // because there is no fallback channel for malformed silent tokens to bypass.
-  // The `--channel`/`--to` binding still resolves the `message` tool's target
-  // and is patched in by `bindCronsToTelegram` once a Telegram session exists.
-  execSync(
-    `openclaw cron add \
-      --name "EdgeClaw — daily digest" \
-      --cron "0 8 * * *" \
-      --session isolated \
-      --light-context \
-      --no-deliver \
-      --channel last \
-      --message "$(cat ${workspaceDir}/prompts/digest.md)"`,
-    { stdio: ["ignore", "ignore", "inherit"], env, shell: "/bin/sh" },
-  );
-
-  execSync(
-    `openclaw cron add \
-      --name "EdgeClaw — ambient discovery (afternoon)" \
-      --cron "0 14 * * *" \
-      --session isolated \
-      --light-context \
-      --no-deliver \
-      --channel last \
-      --message "$(cat ${workspaceDir}/prompts/ambient.md)"`,
-    { stdio: ["ignore", "ignore", "inherit"], env, shell: "/bin/sh" },
-  );
-
-  execSync(
-    `openclaw cron add \
-      --name "EdgeClaw — ambient discovery (evening)" \
-      --cron "0 20 * * *" \
-      --session isolated \
-      --light-context \
-      --no-deliver \
-      --channel last \
-      --message "$(cat ${workspaceDir}/prompts/ambient.md)"`,
-    { stdio: ["ignore", "ignore", "inherit"], env, shell: "/bin/sh" },
-  );
-}
-
 function restartGateway(): void {
   console.log("→ restarting gateway");
   try {
@@ -247,50 +181,19 @@ function restartGateway(): void {
   }
 }
 
-function copyWorkspaceFiles(): void {
-  if (!existsSync(SOURCE_WORKSPACE)) {
-    console.error(`error: bundled workspace missing at ${SOURCE_WORKSPACE}`);
-    process.exit(1);
-  }
-
-  if (!existsSync(TARGET_WORKSPACE)) {
-    mkdirSync(TARGET_WORKSPACE, { recursive: true });
-  }
-
-  let copied = 0;
-  for (const entry of readdirSync(SOURCE_WORKSPACE)) {
-    const sourcePath = join(SOURCE_WORKSPACE, entry);
-    const targetPath = join(TARGET_WORKSPACE, entry);
-    const stat = statSync(sourcePath);
-
-    if (stat.isDirectory()) {
-      if (!existsSync(targetPath)) mkdirSync(targetPath, { recursive: true });
-      for (const inner of readdirSync(sourcePath)) {
-        if (!inner.endsWith(".md")) continue;
-        copyFileSync(join(sourcePath, inner), join(targetPath, inner));
-        copied++;
-      }
-    } else if (entry.endsWith(".md")) {
-      copyFileSync(sourcePath, targetPath);
-      copied++;
-    }
-  }
-
-  console.log(`→ staged ${copied} workspace files into ${TARGET_WORKSPACE}`);
-}
-
 function main(): void {
-  const apiKey = readApiKey();
   ensureOpenclawAvailable();
 
   console.log("EdgeClaw installer");
   console.log("==================");
-  console.log(`target: ${IS_DEV ? "dev" : "production"} (${PROTOCOL_MCP_URL})`);
   console.log("");
 
-  patchOpenclawConfig(apiKey);
+  disableTelegramTidepooling();
   copyWorkspaceFiles();
-  installCronJobs();
+
+  installIndex();
+  installEdgeos();
+  installGeo();
 
   const npmBin = `${process.env.HOME}/.npm/bin`;
   const localBin = `${process.env.HOME}/.local/bin`;
