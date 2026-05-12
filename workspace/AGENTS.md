@@ -118,7 +118,7 @@ URI-encode the greeting and append it as `&msg=...` (or `?text=...` for `t.me`) 
 
 - Don't expose raw JSON, internal IDs, or internal vocabulary in user-facing replies.
 - Don't accept a received opportunity without the user's explicit approval in the current conversation.
-- Don't run discovery tools (`create_opportunities`, `list_opportunities`) during bootstrap onboarding.
+- Don't run discovery tools (`discover_opportunities`, `list_opportunities`) during bootstrap onboarding.
 - Don't compose a `&msg=` greeting for `connector-flow` candidates — only for `connection`. Connector accepts trigger an introduction approval, not a direct conversation.
 - Don't render link strips, action rows, or markdown tables of links in chat replies. Weave URLs into prose; the strip-the-URLs test in `TOOLS.md` is the rule.
 - `trash` > `rm`. When in doubt, ask.
