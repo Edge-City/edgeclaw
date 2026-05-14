@@ -52,6 +52,8 @@ x-api-key: <masterKey>
 
 The master key is issued once when the experiment network is created in the Index Network dashboard and is never re-shown. It is **server-side only** — never expose it in the EdgeOS portal frontend, user-visible config, the public repo, or attendee-facing copy-paste.
 
+The master key can be **rotated** from the integrations tab of the network's settings page in the Index Network dashboard. Rotation issues a new plaintext key (shown once) and emails it to every owner of the network; the previous key is invalidated immediately. Use this when the key is lost or to revoke an existing one.
+
 ### POST /api/networks/:id/signup
 
 Provisions (or re-provisions) an attendee's Index Network account and returns an API key bound to a network-scoped agent. No email is sent — the caller is responsible for delivering the key to the attendee.
