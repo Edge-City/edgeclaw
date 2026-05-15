@@ -205,8 +205,8 @@ The remaining ambient/accepted/freshness/memory work stays on the heartbeat tick
 | `TOOLS.md` | MCP endpoint, full tool family list, output translation table, channel formatting, URL preservation rule. |
 | `HEARTBEAT.md` | Background tasks that run on the OpenClaw heartbeat tick: accepted opportunities, signal freshness, memory curation. |
 | `prompts/welcome.md` | Self-contained prompt for the welcome pass — used by `BOOTSTRAP.md` Step 6. Self-dedupes via `memory/welcome-state.json` and gates on server-side `onboardingComplete`. |
-| `prompts/digest.md` | Self-contained prompt for the daily 08:00 digest cron. |
-| `prompts/ambient.md` | Self-contained prompt for the 14:00 + 20:00 ambient discovery crons. Selective: max 3 direct + 3 introducer per dispatch, dedup via `memory/heartbeat-state.json:lastAmbientHash`. |
+| `prompts/digest.md` | Self-contained prompt for the daily 08:00 digest cron. Filters against `memory/heartbeat-state.json:deliveredToday` so opportunities already surfaced earlier today are skipped. |
+| `prompts/ambient.md` | Self-contained prompt for the 14:00 + 20:00 ambient discovery crons. Selective: max 3 direct + 3 introducer per dispatch. Dedup: `memory/heartbeat-state.json:lastAmbientHash` (skip pass when the fetched set is unchanged) + `deliveredToday` (drop opportunities already surfaced earlier today by digest or ambient). |
 
 ## Auth
 
