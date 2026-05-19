@@ -1,4 +1,4 @@
-name: Index EdgeOS Reference Content
+name: Index Reference Content
 
 on:
   schedule:
@@ -11,9 +11,6 @@ permissions:
 jobs:
   index:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: skills/edgeos
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +23,9 @@ jobs:
       - run: bun run scripts/index.ts
 
       - name: Commit updated references
-        working-directory: ${{ github.workspace }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add skills/edgeos/references/
-          git diff --cached --quiet || git commit -m "Update EdgeOS reference content [automated]"
+          git add references/
+          git diff --cached --quiet || git commit -m "Update reference content [automated]"
           git push
