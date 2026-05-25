@@ -21,7 +21,7 @@ All hosts read credentials from environment variables. Set these before installi
 
 | Variable              | Source                                                                                               | Required |
 | --------------------- | ---------------------------------------------------------------------------------------------------- | -------- |
-| `INDEX_API_KEY`       | Index Network signup (BYOA page or [edgecity.live/agentvillage](https://edgecity.live/agentvillage)) | Yes      |
+| `INDEX_API_KEY`       | Index Network signup (BYOA page or [agent-ee26.edgecity.live](https://agent-ee26.edgecity.live/)) | Yes      |
 | `EDGEOS_BEARER_TOKEN` | EdgeOS email-OTP onboarding flow                                                                     | Optional |
 | `EDGEOS_API_KEY`      | EdgeOS email-OTP onboarding flow (`eos_live_...` key)                                                | Optional |
 
@@ -30,7 +30,7 @@ All hosts read credentials from environment variables. Set these before installi
 
 ### BYOA flow
 
-If you authenticated through the EdgeOS portal (edgecity.live/agentvillage), the page provides your credentials and per-host install commands with the keys pre-filled. Copy and run them in your terminal.
+If you authenticated through the EdgeOS portal (https://agent-ee26.edgecity.live/), the page provides your credentials and per-host install commands with the keys pre-filled. Copy and run them in your terminal.
 
 ### Claude Code
 

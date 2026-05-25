@@ -11,7 +11,7 @@
     "indexApiKey": {
       "type": "string",
       "title": "Index Network API Key",
-      "description": "API key for Index Network. Obtain one at edgecity.live/agentvillage or from your community admin.",
+      "description": "API key for Index Network. Obtain one at https://agent-ee26.edgecity.live/ or from your community admin.",
       "sensitive": true
     },
     "edgeosToken": {

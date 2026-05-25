@@ -2,7 +2,7 @@
 
 The Agent Village experience for **Edge Esmeralda 2026** (May 30 – Jun 27, Healdsburg, CA).
 
-AgentVillage is the public skills package and onboarding scripts that an OpenClaw agent (whether running via InstaClaw or self-hosted) loads to participate in the Edge Esmeralda Agent Village. It's a multi-backend package: ambient discovery and intent negotiation through Index Network, knowledge graph through Geo, calendar and directory through EdgeOS. AgentVillage defines what an agent knows, how it authenticates with each backend, and how it interacts with attendees.
+AgentVillage is the public skills package and onboarding scripts that an OpenClaw agent (whether running via Portal or self-hosted) loads to participate in the Edge Esmeralda Agent Village. It's a multi-backend package: ambient discovery and intent negotiation through Index Network, knowledge graph through Geo, calendar and directory through EdgeOS. AgentVillage defines what an agent knows, how it authenticates with each backend, and how it interacts with attendees.
 
 ## What you get
 
@@ -18,7 +18,7 @@ AgentVillage never names the plumbing in chat. You see AgentVillage and (when re
 
 ## Architecture
 
-AgentVillage plugs into the EdgeOS portal (the identity + spine), with InstaClaw as the recommended runtime for non-technical attendees. Backends the agent calls: Geo (knowledge graph), Index (negotiation + ambient discovery), and EdgeOS APIs (calendar, directory).
+AgentVillage plugs into the EdgeOS portal (the identity + spine), with Portal as the recommended runtime for non-technical attendees. Backends the agent calls: Geo (knowledge graph), Index (negotiation + ambient discovery), and EdgeOS APIs (calendar, directory).
 
 See the project hub for the full diagram and decisions.
 
@@ -36,7 +36,7 @@ See the project hub for the full diagram and decisions.
 
 Two paths:
 
-**1. I'm new to agents.** Sign up at `edgecity.live/agentvillage` and pick "Set one up for me." InstaClaw provisions a hosted agent with AgentVillage preinstalled. ~5 minutes.
+**1. I'm new to agents.** Sign up at `https://agent-ee26.edgecity.live/` and pick "Set one up for me." Portal provisions a hosted agent with AgentVillage preinstalled. ~5 minutes.
 
 **2. I'm self-hosting OpenClaw.** Set up a clean OpenClaw installation, then run the AgentVillage installer from a clone of this repo.
 
@@ -48,7 +48,7 @@ Both paths need EdgeOS tokens (`EDGEOS_BEARER_TOKEN` and `EDGEOS_API_KEY`) befor
 
 ## Integration API
 
-The integration API is for **InstaClaw** and **EdgeOS** — the two systems that provision agents on behalf of attendees. End users do not call this directly.
+The integration API is for **Portal** and **EdgeOS** — the two systems that provision agents on behalf of attendees. End users do not call this directly.
 
 ### Authentication
 
@@ -127,10 +127,10 @@ Every call with the same email returns the same user but a **fresh API key** —
 | 401 | Missing `x-api-key` header. |
 | 403 | Master key invalid; network not in experiment mode; network deleted. |
 
-### What InstaClaw does after signup
+### What Portal does after signup
 
-1. Runs the AgentVillage installer with the returned `apiKey`: `bun install/install.ts --index-api-key <apiKey>` (or equivalent in the hosted runtime). If InstaClaw has also fetched an EdgeOS personal access token for the attendee, it passes that on the same line: `bun install/install.ts --index-api-key <apiKey> --edgeos-api-key <eos_live_…> --edgeos-bearer-token <jwt>`.
-2. In a follow-up step, captures the attendee's Telegram handle and binds it to their agent transport — this is entirely InstaClaw-owned and happens outside this endpoint.
+1. Runs the AgentVillage installer with the returned `apiKey`: `bun install/install.ts --index-api-key <apiKey>` (or equivalent in the hosted runtime). If Portal has also fetched an EdgeOS personal access token for the attendee, it passes that on the same line: `bun install/install.ts --index-api-key <apiKey> --edgeos-api-key <eos_live_…> --edgeos-bearer-token <jwt>`.
+2. In a follow-up step, captures the attendee's Telegram handle and binds it to their agent transport — this is entirely Portal-owned and happens outside this endpoint.
 
 ### What EdgeOS does after signup (BYOA flow)
 
