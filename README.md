@@ -2,7 +2,7 @@
 
 The Agent Village experience for **Edge Esmeralda 2026** (May 30 – Jun 27, Healdsburg, CA).
 
-AgentVillage is the public skills package and onboarding scripts that an OpenClaw agent (whether running via Portal or self-hosted) loads to participate in the Edge Esmeralda Agent Village. It's a multi-backend package: ambient discovery and intent negotiation through Index Network, knowledge graph through Geo, calendar and directory through EdgeOS. AgentVillage defines what an agent knows, how it authenticates with each backend, and how it interacts with attendees.
+AgentVillage is the public skills package and onboarding scripts that an agent (running Hermes, OpenClaw, or Claude) loads to participate in the Edge Esmeralda Agent Village. It's a multi-backend package: ambient discovery and intent negotiation through Index Network, knowledge graph through Geo, calendar and directory through EdgeOS. AgentVillage defines what an agent knows, how it authenticates with each backend, and how it interacts with attendees.
 
 ## What you get
 
@@ -38,7 +38,7 @@ Two paths:
 
 **1. I'm new to agents.** Sign up at `https://agent-ee26.edgecity.live/` and pick "Set one up for me." Portal provisions a hosted agent with AgentVillage preinstalled. ~5 minutes.
 
-**2. I'm self-hosting OpenClaw.** Set up a clean OpenClaw installation, then run the AgentVillage installer from a clone of this repo.
+**2. I'm self-hosting.** Set up Hermes, OpenClaw, or Claude Code, then run the AgentVillage installer from a clone of this repo.
 
 ### EdgeOS tokens
 
