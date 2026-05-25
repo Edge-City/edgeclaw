@@ -28,6 +28,8 @@ This skill is a **knowledge layer** about the popup itself. For live calendar, R
 - **`popup_id`**: `43746fd0-bce2-472b-93e4-a438177b2dff`
   Pass this as the `popup_id` parameter to `edgeos` skill calls that need it — `GET /applications/my/directory/{popup_id}`, `GET /event-venues/portal/venues?popup_id=...`, and `POST /event-venues/portal/venues` (body field).
 - **`popup_slug`**: `edge-esmeralda-2026` (informational; not used by EdgeOS API calls).
+- **`event_base_url`**: `https://edgecity.simplefi.tech/portal/edge-esmeralda-2026/events/`
+  Use this as the prefix for event links by appending the `event_id` returned by the EdgeOS API.
 
 ### Week dates
 
