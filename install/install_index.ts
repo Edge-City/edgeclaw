@@ -22,6 +22,10 @@ const DEV_MCP_URL = "https://protocol.dev.index.network/mcp";
 const IS_DEV = process.argv.slice(2).includes("--dev");
 const PROTOCOL_MCP_URL =
   process.env.INDEX_MCP_URL?.trim() || (IS_DEV ? DEV_MCP_URL : PROD_MCP_URL);
+const APPROVED_PAIRING_PATHS = [
+  join(hermesHome(), "pairing", "telegram-approved.json"),
+  join(hermesHome(), "platforms", "pairing", "telegram-approved.json"),
+];
 
 function readApiKey(): string {
   const key = readFlag("--index-api-key")?.trim() || process.env.INDEX_API_KEY?.trim();
@@ -50,6 +54,45 @@ function writeMcpServerEntry(apiKey: string): void {
   doc.mcp_servers = mcpServers;
   writeFileSync(configPath, YAML.stringify(doc));
   console.log("→ wrote mcp_servers.index in config.yaml");
+}
+
+function readPersistedEnvVar(key: string): string {
+  const envPath = join(hermesHome(), ".env");
+  if (!existsSync(envPath)) return "";
+
+  const prefix = `${key}=`;
+  const line = readFileSync(envPath, "utf8")
+    .split("\n")
+    .find((entry) => entry.startsWith(prefix));
+  return line ? line.slice(prefix.length).trim() : "";
+}
+
+function inferTelegramHomeChannel(): string {
+  const configured =
+    process.env.TELEGRAM_HOME_CHANNEL?.trim() || readPersistedEnvVar("TELEGRAM_HOME_CHANNEL");
+  if (configured) return configured;
+
+  for (const path of APPROVED_PAIRING_PATHS) {
+    if (!existsSync(path)) continue;
+
+    try {
+      const approved = JSON.parse(readFileSync(path, "utf8")) as Record<
+        string,
+        { approved_at?: number }
+      >;
+      const latest = Object.entries(approved)
+        .sort((a, b) => Number(b[1]?.approved_at || 0) - Number(a[1]?.approved_at || 0))[0];
+      if (!latest?.[0]) continue;
+
+      upsertEnvVar("TELEGRAM_HOME_CHANNEL", latest[0]);
+      console.log(`→ set TELEGRAM_HOME_CHANNEL from approved Telegram user ${latest[0]}`);
+      return latest[0];
+    } catch {
+      console.warn(`  warning: could not read ${path}`);
+    }
+  }
+
+  return "";
 }
 
 function removeEdgeCronJobs(env: NodeJS.ProcessEnv): void {
@@ -88,7 +131,8 @@ function installCronJobs(env: NodeJS.ProcessEnv): void {
   const digestMessage = readFileSync(digestPath, "utf8");
   console.log("→ installing morning digest cron");
 
-  const deliver = process.env.TELEGRAM_HOME_CHANNEL?.trim() ? "telegram" : "origin";
+  const homeChannel = inferTelegramHomeChannel();
+  const deliver = homeChannel ? "telegram" : "origin";
   if (deliver === "origin") {
     console.log(
       "  note: TELEGRAM_HOME_CHANNEL not set — cron uses --deliver origin; set it in .env for telegram delivery",
@@ -116,7 +160,10 @@ function installCronJobs(env: NodeJS.ProcessEnv): void {
         "--workdir",
         home,
       ],
-      { stdio: ["ignore", "ignore", "inherit"], env: hermesExecEnv() },
+      {
+        stdio: ["ignore", "ignore", "inherit"],
+        env: homeChannel ? { ...hermesExecEnv(), TELEGRAM_HOME_CHANNEL: homeChannel } : hermesExecEnv(),
+      },
     );
   } catch {
     console.warn("  warning: could not install digest cron — gateway may still run");
