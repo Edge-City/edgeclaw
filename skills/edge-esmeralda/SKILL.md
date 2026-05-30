@@ -26,7 +26,7 @@ This skill is a **knowledge layer** about the popup itself. For live calendar, R
 ## 1. Popup constants (use these with the `edgeos` skill)
 
 - **`popup_id`**: `43746fd0-bce2-472b-93e4-a438177b2dff`
-  Pass this as the `popup_id` parameter to `edgeos` skill calls that need it — `GET /applications/my/directory/{popup_id}`, `GET /event-venues/portal/venues?popup_id=...`, and `POST /event-venues/portal/venues` (body field).
+  Pass this as the `popup_id` parameter to `edgeos` skill calls that need it — `GET /events/portal/events?popup_id=...` (required for correct date filtering), `GET /applications/my/directory/{popup_id}`, `GET /event-venues/portal/venues?popup_id=...`, and `POST /event-venues/portal/venues` (body field).
 - **`popup_slug`**: `edge-esmeralda-2026` (informational; not used by EdgeOS API calls).
 - **`event_base_url`**: `https://edgecity.simplefi.tech/portal/edge-esmeralda-2026/events/`
   Use this as the prefix for event links by appending the `event_id` returned by the EdgeOS API.
@@ -40,7 +40,7 @@ This skill is a **knowledge layer** about the popup itself. For live calendar, R
 | 3 | June 13 – June 20, 2026 |
 | 4 | June 20 – June 27, 2026 |
 
-When the user says "week 2", convert to `start_after=2026-06-06T00:00:00Z&start_before=2026-06-13T23:59:59Z`.
+When the user says "week 2", convert to `start_after=2026-06-06T07:00:00Z&start_before=2026-06-14T07:00:00Z` (PDT midnight = 07:00 UTC; `start_before` is the start of the day *after* the last day).
 
 ---
 
