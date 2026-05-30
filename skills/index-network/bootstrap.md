@@ -8,7 +8,7 @@ This file is the Index Network onboarding ritual. It is gated on Index Network's
 
 The Index Network server is the source of truth for Index onboarding — not local file state. At session start, call `read_user_profiles()` (no args) and check `onboardingComplete`:
 
-- **If `onboardingComplete` is `false`:** run this ritual immediately. Do not offer a way to skip onboarding entirely. Start with the welcome message in Step 1 and proceed in order, but ask the data-use consent question exactly where the ritual says to ask it. While the ritual is in progress, do not send unsolicited messages, do not call discovery tools, and do not run heartbeat tasks. After Step 5 (or any path that ends the ritual), append `[gate] index-network: triggered, ritual complete` to `memory/<today>.md` before handing back to `AGENTS.md` for the Edge gate.
+- **If `onboardingComplete` is `false`:** run this ritual immediately. Do not offer a way to skip onboarding entirely. Start with the welcome message in Step 1 and proceed in order, but ask the data-use consent question exactly where the ritual says to ask it. While the ritual is in progress, do not send unsolicited messages, do not call discovery tools. After Step 5 (or any path that ends the ritual), append `[gate] index-network: triggered, ritual complete` to `memory/<today>.md` before handing back to `AGENTS.md` for the Edge gate.
 - **If `onboardingComplete` is `true`:** skip the ritual. Append `[gate] index-network: skipped (onboardingComplete=true)` to `memory/<today>.md`, then hand back to `AGENTS.md` for the Edge gate. Index Network is already onboarded server-side; Edge onboarding may or may not still need to run, which is handled by the next gate in `AGENTS.md` "First-message gates".
 
 This file is **not** deleted at the end of onboarding — if an admin ever resets the user's `onboardingComplete` flag server-side, the next session will see `onboardingComplete: false` and run the ritual again from the still-staged file.
@@ -100,9 +100,9 @@ Detection by session key:
 - `agent:main:discord:...`, `agent:main:slack:...`, etc. → equivalent treatment if the platform's primary handle is recoverable from session metadata.
 - `agent:main:webchat` or any other context where no platform handle exists → skip the entire step.
 
-Also note the platform + handle in `USER.md` under **Notes** so future heartbeat / digest runs can compose contextual deep links without re-querying. One short line is enough (e.g. `Connected via Telegram (@yanekyuksel).`).
+Also note the platform + handle in `USER.md` under **Notes** so future digest runs can compose contextual deep links without re-querying. One short line is enough (e.g. `Connected via Telegram (@yanekyuksel).`).
 
-If `update_user_profile` returns an error (rate limit, transient failure), log it to `memory/<today>.md` and continue — do not block onboarding on this. The next heartbeat tick can retry.
+If `update_user_profile` returns an error (rate limit, transient failure), log it to `memory/<today>.md` and continue — do not block onboarding on this.
 
 ## Step 5 — Close out and populate USER.md
 
@@ -110,7 +110,7 @@ Call `complete_onboarding()`. This is required — do not skip it. The server au
 
 Update `USER.md` with what you learned in this conversation. Capture only the things the user said directly — name, what to call them, timezone, anything they explicitly told you to remember. Do **not** paraphrase what `preview_user_profile` or `confirm_user_profile` returned; that lives behind the protocol. `USER.md` is the lived notebook, not a duplicate of the structured record.
 
-After populating USER.md, append `[gate] index-network: triggered, ritual complete` to `memory/<today>.md` (the gate-trace line from the session-start gate). The next accepted-opportunity heartbeat tick will pick up from here.
+After populating USER.md, append `[gate] index-network: triggered, ritual complete` to `memory/<today>.md` (the gate-trace line from the session-start gate).
 
 Cron-schedule preferences are not asked about — the morning digest runs at a fixed time and is not user-configurable.
 

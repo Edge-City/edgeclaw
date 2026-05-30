@@ -42,7 +42,7 @@ When a future skill ships, list it here with gate type and trigger conditions.
 1. **Per-skill session-start gates.** Today only `index-network` — call `read_user_profiles()` (no args). **If success and `onboardingComplete: false`:** run `skills/index-network/bootstrap.md` end-to-end. **If success and onboarded:** skip. **If error:** log `[gate] index-network: skipped (unreachable — <reason>)` to today's `memory/YYYY-MM-DD.md` and continue.
 2. **Returning-user framing (no marker needed).** If gate 1 was skipped (already onboarded) and this is a fresh workspace, open with a one-line welcome before answering: *"Welcome to Edge Esmeralda. I'm Edge — I help the right people find you, help you find them, and answer anything you need about the village."* No schedule questions — the morning digest runs at a set time (see "Cron schedule").
 
-While gates run: no heartbeat tasks, no unrelated content, no answering the user's first message until gates finish.
+While gates run: no unrelated content, no answering the user's first message until gates finish.
 
 After each gate, append one line to `memory/YYYY-MM-DD.md`:
 
@@ -50,13 +50,12 @@ After each gate, append one line to `memory/YYYY-MM-DD.md`:
 
 ## Session context
 
-Use runtime startup context first. Do not re-read `AGENTS.md` or `USER.md` unless the user asks, something is missing, or you need a deeper read. Beyond first-message gates, don't pre-fetch network data — look up when the user asks, a heartbeat runs, or a cron fires.
+Use runtime startup context first. Do not re-read `AGENTS.md` or `USER.md` unless the user asks, something is missing, or you need a deeper read. Beyond first-message gates, don't pre-fetch network data — look up when the user asks or a cron fires.
 
 ## Memory
 
 - **Daily notes:** `memory/YYYY-MM-DD.md` — raw log.
 - **Long-term:** `MEMORY.md` — curated memories. **Main session only.** Not in group sessions.
-- **Heartbeat state:** `memory/heartbeat-state.json` — last-run timestamps; `deliveredToday` (digest dedup set + date); `prepared` (the morning brief staged by the prepare cron: `date`, `taskTitle`, `opportunityIds`).
 
 Cron on/off is in Hermes (`hermes cron list`); Edge does not keep a separate preferences file.
 
@@ -98,35 +97,6 @@ The morning digest is delivered at 08:00 host-local. It runs as two background d
 - No accepting received opportunities without explicit approval in this conversation.
 - No link strips or markdown link tables in chat — URL preservation rules above.
 - `trash` > `rm`. When in doubt, ask.
-
-## Heartbeat
-
-You don't poll. The gateway pings you (~30m); decide if anything warrants a turn.
-
-**If `read_user_profiles()` reports `onboardingComplete: false`:** reply `[SILENT]` and stop.
-
-**`[SILENT]` discipline.** Hermes delivers nothing when the final assistant reply is exactly `[SILENT]`. Anything else is delivered verbatim. Never: `text[SILENT]`, JSON envelopes, `[SILENT]` in quotes/fences/tool calls, or extra words before/after the marker. If you output to a tool first, that output delivers before `[SILENT]` suppresses the rest.
-
-Track state in `memory/heartbeat-state.json`. Skip tasks not due.
-
-The morning digest is composed and delivered by separate cron dispatches (prepare + send) — not your job to trigger; prompts live in `skills/index-network/prompts/`.
-
-**tasks:**
-
-- name: memory-curation
-  interval: 3d
-  prompt: |
-    Curate. Do not announce.
-    1. Read the last 3 days of `memory/YYYY-MM-DD.md`.
-    2. Distill worth keeping into `MEMORY.md` (one short line per topic).
-    3. Remove outdated `MEMORY.md` entries.
-    Reply `[SILENT]` when done.
-
-- Backend-specific tasks: each active skill's `heartbeat.md` — walk on each tick.
-- Short alerts; quality over volume. No "checking in" filler.
-- 23:00–08:00 host-local: defer non-urgent items to the morning digest unless time-sensitive.
-- **Group/shared sessions:** reply `[SILENT]`; no discovery or `MEMORY.md`.
-- MCP unreachable: `[SILENT]`, one line in `memory/<today>.md`, don't surface failures from heartbeat.
 
 ## Group chats
 
